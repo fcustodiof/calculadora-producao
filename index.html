@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora - Difusor & Vela</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px;
+        }
+        .card {
+            background: #16213e;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.3);
+        }
+        h1 { text-align: center; margin-bottom: 4px; font-size: 1.5rem; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: .85rem; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: .95rem;
+            transition: all .2s;
+            color: #888;
+        }
+        .tab.active { background: #e94560; color: #fff; }
+        .tab:not(.active):hover { color: #ccc; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: .9rem; }
+        .input-group { display: flex; gap: 12px; margin-bottom: 16px; }
+        .input-group > div { flex: 1; }
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #334;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #eee;
+            font-size: 1rem;
+        }
+        input:focus, select:focus { outline: none; border-color: #e94560; }
+        .slider-group { margin-bottom: 18px; }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .slider-header span { color: #e94560; font-weight: 700; font-size: 1rem; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334;
+            border: none;
+            padding: 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+        }
+        .total-bar {
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: .9rem;
+            transition: background .2s;
+        }
+        .total-bar.over { background: #5c1a1a; color: #ff6b6b; }
+        .total-bar.ok { color: #51cf66; }
+        .results {
+            background: #0f3460;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .results h2 { font-size: 1rem; margin-bottom: 14px; color: #e94560; }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px solid #1a1a3e;
+            font-size: .95rem;
+        }
+        .row:last-child { border-bottom: none; }
+        .row .label { color: #aaa; }
+        .row .value { font-weight: 700; }
+        .total-row .label, .total-row .value { color: #e94560; font-weight: 700; }
+        .note {
+            margin-top: 14px;
+            padding: 12px;
+            background: #1a1a2e;
+            border-left: 3px solid #e94560;
+            border-radius: 4px;
+            font-size: .82rem;
+            color: #aaa;
+            line-height: 1.5;
+        }
+        .qty-group {
+            margin-bottom: 16px;
+        }
+        .qty-group input {
+            width: 80px;
+            text-align: center;
+        }
+        .qty-group .inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .batch { margin-top: 12px; }
+        .batch h3 { font-size: .95rem; color: #e94560; margin-bottom: 10px; }
+        .separator {
+            border: none;
+            border-top: 1px solid #334;
+            margin: 14px 0;
+        }
+        .density-note {
+            font-size: .8rem;
+            color: #666;
+            margin-bottom: 12px;
+            text-align: center;
+            font-style: italic;
+        }
+        .row .label {
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        .row .value {
+            flex-shrink: 0;
+            text-align: right;
+            padding-left: 8px;
+        }
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .card { padding: 20px; }
+            h1 { font-size: 1.3rem; }
+            .tab { padding: 10px 4px; font-size: .8rem; }
+            .results { padding: 14px; }
+            .row { font-size: .88rem; }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 26px; height: 26px;
+            }
+        }
+        @media (max-width: 360px) {
+            .card { padding: 16px; }
+            .tab { font-size: .72rem; }
+            .input-group { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Calculadora de Producao</h1>
+        <p class="subtitle">Difusores, home sprays e velas artesanais</p>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="difusor">Difusor</div>
+            <div class="tab" data-tab="spray">Home Spray</div>
+            <div class="tab" data-tab="vela">Vela</div>
+        </div>
+
+        <!-- ==================== DIFUSOR ==================== -->
+        <div class="panel active" id="panel-difusor">
+            <div class="input-group">
+                <div>
+                    <label for="d-volume">Volume do recipiente</label>
+                    <input type="number" id="d-volume" value="100" min="1" max="10000" step="10">
+                </div>
+                <div>
+                    <label for="d-unit">Unidade</label>
+                    <select id="d-unit">
+                        <option value="ml">ml</option>
+                        <option value="g">g</option>
+                        <option value="L">L</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="d-essencia">Essencia hidrossoluvel</label>
+                    <span id="d-essencia-val">30%</span>
+                </div>
+                <input type="range" id="d-essencia" min="0" max="80" value="30">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="d-alcool">Alcool</label>
+                    <span id="d-alcool-val">60%</span>
+                </div>
+                <input type="range" id="d-alcool" min="0" max="90" value="60">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="d-propi">Propilenoglicol</label>
+                    <span id="d-propi-val">10%</span>
+                </div>
+                <input type="range" id="d-propi" min="0" max="50" value="10">
+            </div>
+
+            <div class="total-bar" id="d-total-bar">
+                <span>Total das porcentagens</span>
+                <span id="d-total-pct">100%</span>
+            </div>
+
+            <div class="qty-group">
+                <label>Quantidade de difusores</label>
+                <div class="inline">
+                    <input type="number" id="d-qty" value="1" min="1" max="999">
+                    <span style="color:#888; font-size:.85rem;">unidades</span>
+                </div>
+            </div>
+
+            <div class="results" id="d-results"></div>
+
+            <div class="note">
+                <strong>Renex:</strong> adicione aos poucos e misture ate a solucao ficar transparente. A quantidade varia conforme a essencia usada.
+            </div>
+        </div>
+
+        <!-- ==================== HOME SPRAY ==================== -->
+        <div class="panel" id="panel-spray">
+            <div class="input-group">
+                <div>
+                    <label for="s-volume">Volume do recipiente</label>
+                    <input type="number" id="s-volume" value="180" min="1" max="10000" step="10">
+                </div>
+                <div>
+                    <label for="s-unit">Unidade</label>
+                    <select id="s-unit">
+                        <option value="ml">ml</option>
+                        <option value="g">g</option>
+                        <option value="L">L</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="s-essencia">Essencia</label>
+                    <span id="s-essencia-val">10%</span>
+                </div>
+                <input type="range" id="s-essencia" min="0" max="50" value="10">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="s-alcool">Alcool</label>
+                    <span id="s-alcool-val">70%</span>
+                </div>
+                <input type="range" id="s-alcool" min="0" max="90" value="70">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="s-agua">Agua</label>
+                    <span id="s-agua-val">20%</span>
+                </div>
+                <input type="range" id="s-agua" min="0" max="50" value="20">
+            </div>
+
+            <div class="total-bar" id="s-total-bar">
+                <span>Total das porcentagens</span>
+                <span id="s-total-pct">100%</span>
+            </div>
+
+            <div class="qty-group">
+                <label>Quantidade de frascos</label>
+                <div class="inline">
+                    <input type="number" id="s-qty" value="1" min="1" max="999">
+                    <span style="color:#888; font-size:.85rem;">unidades</span>
+                </div>
+            </div>
+
+            <div class="results" id="s-results"></div>
+
+            <div class="note">
+                <strong>Renex:</strong> adicione apenas 1 fio e misture bem.
+            </div>
+        </div>
+
+        <!-- ==================== VELA ==================== -->
+        <div class="panel" id="panel-vela">
+            <div class="input-group">
+                <div>
+                    <label for="v-agua">Peso da agua no recipiente</label>
+                    <input type="number" id="v-agua" value="42" min="1" max="10000" step="1">
+                </div>
+                <div>
+                    <label for="v-unit">Unidade</label>
+                    <select id="v-unit">
+                        <option value="g">g</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="density-note">Agua x 0.86 = peso da cera (densidade diferente)</p>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label for="v-essencia">Essencia</label>
+                    <span id="v-essencia-val">13%</span>
+                </div>
+                <input type="range" id="v-essencia" min="1" max="30" value="13">
+            </div>
+
+            <div class="qty-group">
+                <label>Quantidade de velas</label>
+                <div class="inline">
+                    <input type="number" id="v-qty" value="1" min="1" max="999">
+                    <span style="color:#888; font-size:.85rem;">unidades</span>
+                </div>
+            </div>
+
+            <div class="results" id="v-results"></div>
+
+            <div class="note">
+                <strong>Dica:</strong> coloque o recipiente na balanca, aperte TARE, encha com agua ate a marca desejada e anote o peso acima.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TABS =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ===== DIFUSOR =====
+        const dSliders = [
+            { id: 'd-essencia', label: 'Essencia hidrossoluvel' },
+            { id: 'd-alcool', label: 'Alcool' },
+            { id: 'd-propi', label: 'Propilenoglicol' },
+        ];
+
+        function calcDifusor() {
+            let vol = parseFloat(document.getElementById('d-volume').value) || 0;
+            const unit = document.getElementById('d-unit').value;
+            if (unit === 'L') vol *= 1000;
+            const displayUnit = unit === 'L' ? 'ml' : unit;
+
+            const qty = parseInt(document.getElementById('d-qty').value) || 1;
+
+            let total = 0;
+            const items = dSliders.map(s => {
+                const pct = parseInt(document.getElementById(s.id).value);
+                document.getElementById(s.id + '-val').textContent = pct + '%';
+                total += pct;
+                return { label: s.label, pct, ml: (vol * pct / 100) };
+            });
+
+            document.getElementById('d-total-pct').textContent = total + '%';
+            const bar = document.getElementById('d-total-bar');
+            bar.className = 'total-bar ' + (total === 100 ? 'ok' : 'over');
+
+            const resultsDiv = document.getElementById('d-results');
+            const totalMl = items.reduce((sum, i) => sum + i.ml, 0);
+
+            let html = `<h2>Receita por unidade (${vol} ${displayUnit})</h2>`;
+            items.forEach(i => {
+                html += `<div class="row">
+                    <span class="label">${i.label} (${i.pct}%)</span>
+                    <span class="value">${i.ml.toFixed(1)} ${displayUnit}</span>
+                </div>`;
+            });
+            html += `<div class="row">
+                <span class="label">Renex</span>
+                <span class="value">ate ficar transparente</span>
+            </div>`;
+            html += `<div class="row total-row">
+                <span class="label">Total</span>
+                <span class="value">${totalMl.toFixed(1)} ${displayUnit}</span>
+            </div>`;
+
+            if (qty > 1) {
+                html += `<hr class="separator">`;
+                html += `<div class="batch"><h3>Producao em lote (${qty} unidades)</h3>`;
+                items.forEach(i => {
+                    html += `<div class="row">
+                        <span class="label">${i.label}</span>
+                        <span class="value">${(i.ml * qty).toFixed(1)} ${displayUnit}</span>
+                    </div>`;
+                });
+                html += `<div class="row">
+                    <span class="label">Renex</span>
+                    <span class="value">ate ficar transparente</span>
+                </div>`;
+                html += `<div class="row total-row">
+                    <span class="label">Total</span>
+                    <span class="value">${(totalMl * qty).toFixed(1)} ${displayUnit}</span>
+                </div></div>`;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        dSliders.forEach(s => document.getElementById(s.id).addEventListener('input', calcDifusor));
+        ['d-volume', 'd-qty'].forEach(id => document.getElementById(id).addEventListener('input', calcDifusor));
+        document.getElementById('d-unit').addEventListener('change', calcDifusor);
+        calcDifusor();
+
+        // ===== HOME SPRAY =====
+        const sSliders = [
+            { id: 's-essencia', label: 'Essencia' },
+            { id: 's-alcool', label: 'Alcool' },
+            { id: 's-agua', label: 'Agua' },
+        ];
+
+        function calcSpray() {
+            let vol = parseFloat(document.getElementById('s-volume').value) || 0;
+            const unit = document.getElementById('s-unit').value;
+            if (unit === 'L') vol *= 1000;
+            const displayUnit = unit === 'L' ? 'ml' : unit;
+
+            const qty = parseInt(document.getElementById('s-qty').value) || 1;
+
+            let total = 0;
+            const items = sSliders.map(s => {
+                const pct = parseInt(document.getElementById(s.id).value);
+                document.getElementById(s.id + '-val').textContent = pct + '%';
+                total += pct;
+                return { label: s.label, pct, ml: (vol * pct / 100) };
+            });
+
+            document.getElementById('s-total-pct').textContent = total + '%';
+            const bar = document.getElementById('s-total-bar');
+            bar.className = 'total-bar ' + (total === 100 ? 'ok' : 'over');
+
+            const resultsDiv = document.getElementById('s-results');
+            const totalMl = items.reduce((sum, i) => sum + i.ml, 0);
+
+            let html = `<h2>Receita por unidade (${vol} ${displayUnit})</h2>`;
+            items.forEach(i => {
+                html += `<div class="row">
+                    <span class="label">${i.label} (${i.pct}%)</span>
+                    <span class="value">${i.ml.toFixed(1)} ${displayUnit}</span>
+                </div>`;
+            });
+            html += `<div class="row">
+                <span class="label">Renex</span>
+                <span class="value">1 fio</span>
+            </div>`;
+            html += `<div class="row total-row">
+                <span class="label">Total</span>
+                <span class="value">${totalMl.toFixed(1)} ${displayUnit}</span>
+            </div>`;
+
+            if (qty > 1) {
+                html += `<hr class="separator">`;
+                html += `<div class="batch"><h3>Producao em lote (${qty} frascos)</h3>`;
+                items.forEach(i => {
+                    html += `<div class="row">
+                        <span class="label">${i.label}</span>
+                        <span class="value">${(i.ml * qty).toFixed(1)} ${displayUnit}</span>
+                    </div>`;
+                });
+                html += `<div class="row">
+                    <span class="label">Renex</span>
+                    <span class="value">1 fio por frasco</span>
+                </div>`;
+                html += `<div class="row total-row">
+                    <span class="label">Total</span>
+                    <span class="value">${(totalMl * qty).toFixed(1)} ${displayUnit}</span>
+                </div></div>`;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        sSliders.forEach(s => document.getElementById(s.id).addEventListener('input', calcSpray));
+        ['s-volume', 's-qty'].forEach(id => document.getElementById(id).addEventListener('input', calcSpray));
+        document.getElementById('s-unit').addEventListener('change', calcSpray);
+        calcSpray();
+
+        // ===== VELA =====
+        function calcVela() {
+            const pesoAgua = parseFloat(document.getElementById('v-agua').value) || 0;
+            const essPct = parseInt(document.getElementById('v-essencia').value);
+            const qty = parseInt(document.getElementById('v-qty').value) || 1;
+
+            document.getElementById('v-essencia-val').textContent = essPct + '%';
+
+            const pesoTotal = pesoAgua * 0.86;
+            const cera = pesoTotal / (1 + essPct / 100);
+            const essencia = cera * essPct / 100;
+
+            const resultsDiv = document.getElementById('v-results');
+            let html = `<h2>Receita por unidade</h2>`;
+            html += `<div class="row">
+                <span class="label">Peso da agua</span>
+                <span class="value">${pesoAgua.toFixed(1)} g</span>
+            </div>`;
+            html += `<div class="row">
+                <span class="label">Peso total da vela (x0.86)</span>
+                <span class="value">${pesoTotal.toFixed(2)} g</span>
+            </div>`;
+            html += `<hr class="separator">`;
+            html += `<div class="row">
+                <span class="label">Cera (${100 - essPct}%)</span>
+                <span class="value">${cera.toFixed(2)} g</span>
+            </div>`;
+            html += `<div class="row">
+                <span class="label">Essencia (${essPct}%)</span>
+                <span class="value">${essencia.toFixed(2)} g</span>
+            </div>`;
+            html += `<div class="row total-row">
+                <span class="label">Total</span>
+                <span class="value">${pesoTotal.toFixed(2)} g</span>
+            </div>`;
+
+            if (qty > 1) {
+                html += `<hr class="separator">`;
+                html += `<div class="batch"><h3>Producao em lote (${qty} velas)</h3>`;
+                html += `<div class="row">
+                    <span class="label">Cera</span>
+                    <span class="value">${(cera * qty).toFixed(2)} g</span>
+                </div>`;
+                html += `<div class="row">
+                    <span class="label">Essencia</span>
+                    <span class="value">${(essencia * qty).toFixed(2)} g</span>
+                </div>`;
+                html += `<div class="row total-row">
+                    <span class="label">Total</span>
+                    <span class="value">${(pesoTotal * qty).toFixed(2)} g</span>
+                </div></div>`;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        ['v-agua', 'v-essencia', 'v-qty'].forEach(id =>
+            document.getElementById(id).addEventListener('input', calcVela)
+        );
+        calcVela();
+    </script>
+</body>
+</html>
