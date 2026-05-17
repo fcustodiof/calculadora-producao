@@ -366,6 +366,34 @@
             });
         });
 
+        // ===== DENSIDADES (g/ml) =====
+        const DENSIDADES = {
+            'd-essencia': 0.95,
+            'd-alcool': 0.789,
+            'd-propi': 1.036,
+            's-essencia': 0.95,
+            's-alcool': 0.789,
+            's-agua': 1.0,
+        };
+
+        function dual(ml, density, inputUnit) {
+            if (inputUnit === 'g') {
+                const mlVal = ml / density;
+                return `${ml.toFixed(1)} g <span style="color:#666; font-size:.8em">/ ${mlVal.toFixed(1)} ml</span>`;
+            }
+            const g = ml * density;
+            return `${ml.toFixed(1)} ml <span style="color:#666; font-size:.8em">/ ${g.toFixed(1)} g</span>`;
+        }
+
+        function dualTotal(val, items, inputUnit) {
+            if (inputUnit === 'g') {
+                const totalMl = items.reduce((s, i) => s + i.val / DENSIDADES[i.id], 0);
+                return `${val.toFixed(1)} g <span style="color:#666; font-size:.8em">/ ${totalMl.toFixed(1)} ml</span>`;
+            }
+            const totalG = items.reduce((s, i) => s + i.val * DENSIDADES[i.id], 0);
+            return `${val.toFixed(1)} ml <span style="color:#666; font-size:.8em">/ ${totalG.toFixed(1)} g</span>`;
+        }
+
         // ===== DIFUSOR =====
         const dSliders = [
             { id: 'd-essencia', label: 'Essencia hidrossoluvel' },
@@ -377,7 +405,7 @@
             let vol = parseFloat(document.getElementById('d-volume').value) || 0;
             const unit = document.getElementById('d-unit').value;
             if (unit === 'L') vol *= 1000;
-            const displayUnit = unit === 'L' ? 'ml' : unit;
+            const inputUnit = unit === 'L' ? 'ml' : unit;
 
             const qty = parseInt(document.getElementById('d-qty').value) || 1;
 
@@ -386,7 +414,7 @@
                 const pct = parseInt(document.getElementById(s.id).value);
                 document.getElementById(s.id + '-val').textContent = pct + '%';
                 total += pct;
-                return { label: s.label, pct, ml: (vol * pct / 100) };
+                return { id: s.id, label: s.label, pct, val: (vol * pct / 100) };
             });
 
             document.getElementById('d-total-pct').textContent = total + '%';
@@ -394,13 +422,13 @@
             bar.className = 'total-bar ' + (total === 100 ? 'ok' : 'over');
 
             const resultsDiv = document.getElementById('d-results');
-            const totalMl = items.reduce((sum, i) => sum + i.ml, 0);
+            const totalVal = items.reduce((sum, i) => sum + i.val, 0);
 
-            let html = `<h2>Receita por unidade (${vol} ${displayUnit})</h2>`;
+            let html = `<h2>Receita por unidade (${vol} ${inputUnit})</h2>`;
             items.forEach(i => {
                 html += `<div class="row">
                     <span class="label">${i.label} (${i.pct}%)</span>
-                    <span class="value">${i.ml.toFixed(1)} ${displayUnit}</span>
+                    <span class="value">${dual(i.val, DENSIDADES[i.id], inputUnit)}</span>
                 </div>`;
             });
             html += `<div class="row">
@@ -409,16 +437,17 @@
             </div>`;
             html += `<div class="row total-row">
                 <span class="label">Total</span>
-                <span class="value">${totalMl.toFixed(1)} ${displayUnit}</span>
+                <span class="value">${dualTotal(totalVal, items, inputUnit)}</span>
             </div>`;
 
             if (qty > 1) {
                 html += `<hr class="separator">`;
                 html += `<div class="batch"><h3>Producao em lote (${qty} unidades)</h3>`;
-                items.forEach(i => {
+                const batchItems = items.map(i => ({ ...i, val: i.val * qty }));
+                batchItems.forEach(i => {
                     html += `<div class="row">
                         <span class="label">${i.label}</span>
-                        <span class="value">${(i.ml * qty).toFixed(1)} ${displayUnit}</span>
+                        <span class="value">${dual(i.val, DENSIDADES[i.id], inputUnit)}</span>
                     </div>`;
                 });
                 html += `<div class="row">
@@ -427,7 +456,7 @@
                 </div>`;
                 html += `<div class="row total-row">
                     <span class="label">Total</span>
-                    <span class="value">${(totalMl * qty).toFixed(1)} ${displayUnit}</span>
+                    <span class="value">${dualTotal(totalVal * qty, batchItems, inputUnit)}</span>
                 </div></div>`;
             }
 
@@ -450,7 +479,7 @@
             let vol = parseFloat(document.getElementById('s-volume').value) || 0;
             const unit = document.getElementById('s-unit').value;
             if (unit === 'L') vol *= 1000;
-            const displayUnit = unit === 'L' ? 'ml' : unit;
+            const inputUnit = unit === 'L' ? 'ml' : unit;
 
             const qty = parseInt(document.getElementById('s-qty').value) || 1;
 
@@ -459,7 +488,7 @@
                 const pct = parseInt(document.getElementById(s.id).value);
                 document.getElementById(s.id + '-val').textContent = pct + '%';
                 total += pct;
-                return { label: s.label, pct, ml: (vol * pct / 100) };
+                return { id: s.id, label: s.label, pct, val: (vol * pct / 100) };
             });
 
             document.getElementById('s-total-pct').textContent = total + '%';
@@ -467,13 +496,13 @@
             bar.className = 'total-bar ' + (total === 100 ? 'ok' : 'over');
 
             const resultsDiv = document.getElementById('s-results');
-            const totalMl = items.reduce((sum, i) => sum + i.ml, 0);
+            const totalVal = items.reduce((sum, i) => sum + i.val, 0);
 
-            let html = `<h2>Receita por unidade (${vol} ${displayUnit})</h2>`;
+            let html = `<h2>Receita por unidade (${vol} ${inputUnit})</h2>`;
             items.forEach(i => {
                 html += `<div class="row">
                     <span class="label">${i.label} (${i.pct}%)</span>
-                    <span class="value">${i.ml.toFixed(1)} ${displayUnit}</span>
+                    <span class="value">${dual(i.val, DENSIDADES[i.id], inputUnit)}</span>
                 </div>`;
             });
             html += `<div class="row">
@@ -482,16 +511,17 @@
             </div>`;
             html += `<div class="row total-row">
                 <span class="label">Total</span>
-                <span class="value">${totalMl.toFixed(1)} ${displayUnit}</span>
+                <span class="value">${dualTotal(totalVal, items, inputUnit)}</span>
             </div>`;
 
             if (qty > 1) {
                 html += `<hr class="separator">`;
                 html += `<div class="batch"><h3>Producao em lote (${qty} frascos)</h3>`;
-                items.forEach(i => {
+                const batchItems = items.map(i => ({ ...i, val: i.val * qty }));
+                batchItems.forEach(i => {
                     html += `<div class="row">
                         <span class="label">${i.label}</span>
-                        <span class="value">${(i.ml * qty).toFixed(1)} ${displayUnit}</span>
+                        <span class="value">${dual(i.val, DENSIDADES[i.id], inputUnit)}</span>
                     </div>`;
                 });
                 html += `<div class="row">
@@ -500,7 +530,7 @@
                 </div>`;
                 html += `<div class="row total-row">
                     <span class="label">Total</span>
-                    <span class="value">${(totalMl * qty).toFixed(1)} ${displayUnit}</span>
+                    <span class="value">${dualTotal(totalVal * qty, batchItems, inputUnit)}</span>
                 </div></div>`;
             }
 
